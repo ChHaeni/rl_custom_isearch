@@ -172,11 +172,29 @@ fn custom_isearch() -> DynlibResult<bool> {
     };
     let mut stdin = process.stdin.unwrap();
 
+    // create line vector and check if already written
+    let mut line_vec: Vec<&[u8]> = Vec::new();
+    // line unique
+    let mut push = true;
+
+    // fill unique lines
     for entry in CArray::new(readline::get_history()?) {
         let line = entry.get_line();
-        // break on errors (but otherwise ignore)
-        if ! ( stdin.write_all(line).is_ok() && stdin.write_all(b"\n").is_ok() ) {
-            break
+        // check if line has been written
+        for written in line_vec.iter() {
+            if line == *written {
+                push = false;
+                break
+            } else {
+                push = true;
+            }
+        }
+        if push {
+            // break on errors (but otherwise ignore)
+            if ! ( stdin.write_all(line).is_ok() && stdin.write_all(b"\n").is_ok() ) {
+                break
+            }
+            line_vec.push(line);
         }
     }
 
