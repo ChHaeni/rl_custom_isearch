@@ -53,6 +53,32 @@ impl CArray {
     fn new(ptr: *const *const readline::HistEntry) -> Self {
         CArray{ptr}
     }
+
+    fn erasedups(self) -> Vec<&'static[u8]> {
+        // create vector with history lines
+        let all_lines: Vec<&[u8]> = self.map(|e| e.get_line()).collect();
+        // create lines out vector and fill if unique
+        let mut lines_out: Vec<&[u8]> = Vec::new();
+        // bool unique
+        let mut push = true;
+        // fill uniques
+        for line in all_lines.iter().rev() {
+            // check if line has been written
+            for written in lines_out.iter() {
+                if line == written {
+                    push = false;
+                    break
+                }
+            }
+            if push {
+                lines_out.insert(0, line);
+            } else {
+                push = true;
+            }
+        }
+        // return
+        lines_out
+    }
 }
 
 impl Iterator for CArray {
@@ -172,37 +198,8 @@ fn custom_isearch() -> DynlibResult<bool> {
     };
     let mut stdin = process.stdin.unwrap();
 
-    // create line vector and check if already written
-    let mut all_lines: Vec<&[u8]> = Vec::new();
-    // fill vector with history lines
-    for entry in CArray::new(readline::get_history()?) {
-        let line = entry.get_line();
-        all_lines.push(line);
-    }
-
-    // create lines out vector and fill if unique
-    let mut lines_out: Vec<&[u8]> = Vec::new();
-    // bool unique
-    let mut push = true;
-
-    // fill uniques
-    for line in all_lines.iter().rev() {
-        // check if line has been written
-        for written in lines_out.iter() {
-            if *line == *written {
-                push = false;
-                break
-            } else {
-                push = true;
-            }
-        }
-        if push {
-            lines_out.push(line);
-        }
-    }
-
     // write out
-    for line in lines_out.iter().rev() {
+    for line in CArray::new(readline::get_history()?).erasedups().iter() {
         // break on errors (but otherwise ignore)
         if ! ( stdin.write_all(line).is_ok() && stdin.write_all(b"\n").is_ok() ) {
             break
