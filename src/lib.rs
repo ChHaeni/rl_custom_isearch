@@ -55,14 +55,15 @@ impl CArray {
     }
 
     fn erasedups(self) -> Vec<&'static[u8]> {
-        // create vector with history lines
-        let all_lines: Vec<&[u8]> = self.map(|e| e.get_line()).collect();
         // create lines out vector and fill if unique
         let mut lines_out: Vec<&[u8]> = Vec::new();
-        // bool unique
+        // bool check unique
         let mut push = true;
-        // fill uniques
-        for line in all_lines.iter().rev() {
+        // loop over vector with history lines
+        for line in self
+                    .map(|e| e.get_line())
+                    .collect::<Vec<&[u8]>>()
+                    .iter().rev() {
             // check if line has been written
             for written in lines_out.iter() {
                 if line == written {
